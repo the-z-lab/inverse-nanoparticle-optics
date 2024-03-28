@@ -61,7 +61,8 @@ function params = enforce_bound(params, min_bounds, max_bounds)
 end
 
 % Add the capacitance scripts to path
-addpath('/Users/zacharysherman/Documents/Scattering/MATLAB/Capacitance_Sizes');
+%addpath('/Users/zacharysherman/Documents/Scattering/MATLAB/Capacitance_Sizes');
+addpath('/Users/RishabhSanghavi/zlab/mpm/inversedesign/Meta_Gen/github/inverse-nanoparticle-optics/MPM/Capacitance_Sizes');
 
 % Numerical parameters
 xi = 0.5;

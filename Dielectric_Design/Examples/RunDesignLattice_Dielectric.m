@@ -10,7 +10,8 @@ N = 25; % number of particles
 N_layer = 3; % number of layers
 h = 3; % spacing between layers
 phi = 0.20; % area fraction
-addpath('/Users/zacharysherman/Documents/Code/MATLAB/Lattices')
+%addpath('/Users/zacharysherman/Documents/Code/MATLAB/Lattices')
+addpath('/Users/RishabhSanghavi/zlab/mpm/inversedesign/Meta_Gen/github/inverse-nanoparticle-optics/Initialization/Lattices')
 [x_0,L] = SQLattice(N, phi); % place particles on a 2D lattice
 x_0 = [x_0, zeros(N,1)];
 x = [];
