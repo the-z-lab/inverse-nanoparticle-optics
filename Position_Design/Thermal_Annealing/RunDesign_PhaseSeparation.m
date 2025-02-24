@@ -4,17 +4,15 @@ function [] = RunDesign_PhaseSeparation()
 %addpath('/gscratch/zeelab/zsherm/Meta_Gen/Lattices')
 %addpath('/gscratch/zeelab/zsherm/Meta_Gen/Capacitance_Hetero')
 
-%addpath('/gscratch/zeelab/rdsanghavi/mpm/mpm/inversedesign/Meta_Gen/Lattices')
-%addpath('/gscratch/zeelab/rdsanghavi/mpm/mpm/inversedesign/Meta_Gen/Capacitance_Hetero')
+addpath('/gscratch/zeelab/rdsanghavi/mpm/mpm/inversedesign/Meta_Gen/Lattices')
+addpath('/gscratch/zeelab/rdsanghavi/mpm/mpm/inversedesign/Meta_Gen/Capacitance_Hetero')
 
-addpath('/Users/RishabhSanghavi/zlab/mpm/inversedesign/Meta_Gen/github/inverse-nanoparticle-optics/Initialization/Lattices');
-addpath('/Users/RishabhSanghavi/zlab/mpm/inversedesign/Meta_Gen/github/inverse-nanoparticle-optics/MPM/Capacitance_Hetero');
-
-%% Target extinction spectrum
+% Target extinction spectrum
 
 % Construct a lattice
 N_x = 9; % number of unit cells in x dimension
 N_y = 5; % number of unit cells in y dimension
+%N = 2*N_x*N_y;
 phi = pi/(2*sqrt(3)); % area fraction
 [x_t, L] = HexLattice(N_x, N_y, phi); % place particles on a lattice
 N = size(x_t, 1); % number of particles
@@ -40,10 +38,21 @@ E_0 = [0, 0, 1]; % field polarization
 xi = 0.50; % Ewald parameter
 
 % Compute the target extinction spectrum
-[C, ~] = CapacitanceSpectrum(x_t, box, eps_p, xi);
-ext_t = 3/(4*pi)*omega.*imag(C); % target extinction
+% expanding out x and z components
+%{
+[C, ~] = CapacitanceTensorSpectrum(x_t, box, eps_p, xi); % to solve for C in x, y, z
+Cavg = 1/2*(C(1,1,:) + C(3,3,:));
+Cavg_sq = squeeze(Cavg);
 
-%% Optimization initialization
+ext_t = 3/(4*pi)*omega.*imag(Cavg_sq); % target extinction
+%}
+
+% hexagonal lattice is isotropic, linear and polarized light will be the same for hexagonal lattice Cxx = Czz
+% no need to break down C to x and z components
+[C, ~] = CapacitanceSpectrum(x_t, box, eps_p, xi);
+ext_t = 3/(4*pi)*omega.*imag(C);
+
+% Optimization initialization
 
 % Optimization geometry
 N = N; % number of particles
@@ -54,17 +63,21 @@ phi = 0.40; % area fraction
 x_0 = [x_0(:,1), zeros(N,1), x_0(:,2)]; % put particles in the xz plane
 box = [L(1), L_y, L(2)]; % box dimensions
 
-%% Run optimization
+% Run optimization
 
 % Numerical parameters
 step_size = 0.01;
 error_tol = 0.001;
-T = 0.10*[1, 0, 1];
+T1 = 0.2*[1, 0, 1];
+T2 = 0.2*[1, 0, 1];
+
+% dim argument for Design_Position, electric field direction x(1) and z(1)
+dim = [1, 3];
 
 % File name
-outfile = sprintf('phasesep_T%.2f.mat', T(1));
+outfile = sprintf('T0.2_period500_fix_ypos.mat');
 
 % Run the design
-[x, ext, E] = Design_Position(x_0, box, omega, E_0, ext_t, eps_params, step_size, T, error_tol, outfile);
+[x, ext, E] = Design_Position_varyT(x_0, box, omega, E_0, ext_t, eps_params, step_size, T1(1), T2(1), error_tol, outfile, dim);
 
 end
