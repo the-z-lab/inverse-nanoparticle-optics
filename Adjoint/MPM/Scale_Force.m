@@ -1,36 +1,32 @@
-function [fHtilde] = Scale_Force(fH,k,Ngrid,xi,eta)
+function fE_tilde = Scale_Force(fE, q, N_grid, xi, eta)
 
-% Scale the gridded values for the field.
+% Scale the gridded values. This converts dipoles to fields in wave space.
 %
 % INPUTS
-% fH = (Ngrid(1)-by-Ngrid(2)-by-Ngrid(3)-by-3 array) Fourier transform of dipoles on the reciprocal grid
-% k = (Ngrid(1)-by-Ngrid(2)-by-Ngrid(3)-by-3 array) wave vector (4th dimension) 
-%     corresponding to each reciprocal grid node (first 3 dimensions)
-% Ngrid = (3 row vector) number of reciprocal grid nodes in each dimension
-% xi = Ewald splitting parameter
-% eta = (3 row vector) spectral splitting parameter
+% fE = (N_grid(1)-by-N_grid(2)-by-N_grid(3)-by-3) Fourier transform of dipoles on the reciprocal grid
+% q = (Ngrid(1)-by-Ngrid(2)-by-Ngrid(3)-by-3) wavevector (4th dimension) at each grid node
+% N_grid = (1-by-3) number of grid nodes in each dimension
+% xi = (scalar) Ewald splitting parameter
+% eta = (3-by-1) spectral splitting parameter
 %
 % OUTPUTS 
-% fHtilde = (same size as fH) scaled grid from which the dipoles can be computed
+% fE_tilde = (Ngrid(1)-by-Ngrid(2)-by-Ngrid(3)-by-3) scaled grid
 
-% magnitude squared of the current wave vector
-k2 = sum(k.^2,4);
+% Wavevectors
+q_mag = sqrt(sum(q.^2,4)); % wavevector magnitude
+q_hat = q./q_mag; % wavevector unit vectors
 
-% index of the k = 0 entry
-k0x = ceil((Ngrid(1) - 1)/2) + 1;
-k0y = ceil((Ngrid(2) - 1)/2) + 1;
-k0z = ceil((Ngrid(3) - 1)/2) + 1;
+% Remove the q=0 value
+q_0 = ceil((N_grid-1)/2) + 1; % index of q=0
+q_hat(q_0(1),q_0(2),q_0(3),:) = 0;
 
-% k unit vectors
-khat = k./repmat(sqrt(k2),1,1,1,3);
-khat(k0x,k0y,k0z,:) = 0;
+% Dot product of eta and q^2 on the grids
+eta_reshape = repmat(reshape((1-eta),1,1,1,3), size(q(:,:,:,1))); % put 1-eta in the 4th dimension and replicate to make it the same size as q
+eta_dot_q2 = dot(eta_reshape, q.^2, 4);
 
-% Dot product of eta and k^2 on the grid
-etak2 = dot(repmat(reshape((1-eta),1,1,1,3),size(k(:,:,:,1))),k.^2,4);
-
-% scale the Fourier transform of the grid
-Htildecoeff = 9*pi./(2*sqrt(k2)).*besselj(1+1/2,sqrt(k2)).^2.*exp(-etak2/(4*xi^2))./k2;
-Htildecoeff(k0x,k0y,k0z) = 0;
-fHtilde = repmat(Htildecoeff.*dot(khat,fH,4),[1,1,1,3]).*khat;
+% Scale the grid
+E_tilde_coeff = 9*pi./(2*q_mag).*besselj(1+1/2,q_mag).^2.*exp(-eta_dot_q2/(4*xi^2))./q_mag.^2; % Ngrid(1)-by-Ngrid(2)-by-Ngrid(3); scalar portion of the scaling
+E_tilde_coeff(q_0(1),q_0(2),q_0(3)) = 0; % remove the q=0 value
+fE_tilde = E_tilde_coeff.*dot(fE,q_hat,4).*q_hat;
 
 end
